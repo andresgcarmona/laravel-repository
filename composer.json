@@ -1,6 +1,6 @@
 {
     "name": "polaris/laravel-repository",
-    "description": "A repository class to manage models operations in Laravel",
+    "description": "A repository package to manage models operations in Laravel",
     "license": "MIT",
     "authors": [
         {
