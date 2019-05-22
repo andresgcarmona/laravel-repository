@@ -2,13 +2,13 @@
     
     namespace Polaris;
     
+    use BadMethodCallException;
+    use Closure;
     use Exception as RepositoryException;
     use Illuminate\Container\Container as App;
     use Illuminate\Database\Eloquent\Collection;
-    use Illuminate\Database\Eloquent\Model;
     use Polaris\Contracts\RepositoryInterface;
-    use RuntimeException;
-
+    
     abstract class AbstractRepository implements RepositoryInterface
     {
         /**
@@ -24,7 +24,7 @@
          * @var
          */
         protected $model;
-    
+        
         /**
          * AbstractRepository constructor.
          *
@@ -37,7 +37,7 @@
             
             $this->makeModel();
         }
-    
+        
         /**
          * @return \Illuminate\Database\Eloquent\Builder
          * @throws RepositoryException
@@ -46,32 +46,112 @@
         {
             $model = $this->app->make($this->model);
             
-            if(! $model instanceof Model)
-            {
-                throw new RuntimeException("Class {$this->model()} must be an instance of Illuminate\\Database\\Eloquent\\Model");
-            }
-            
             return $this->model = $model->newQuery();
         }
-    
+        
         /**
          * Returns all the records in the current constructed query.
          *
          * @param array $columns array of columns to select from the model(s).
          * @return mixed
          */
-        public function get(array $columns = ['*']) : Collection
+        public function get(array $columns = ['*']) : ?object
         {
             return $this->model->get($columns);
         }
-    
+        
         /**
          * @param int $numResults number of results returned by this method.
          * @param array $columns array of columns to select from the model(s).
          * @return Collection
          */
-        public function paginate(int $numResults = 15, array $columns = ['*']) : Collection
+        public function paginate(int $perPage = 15, array $columns = ['*'], string $pageName = 'page', $page = null)
         {
-            return $this->model->paginate($columns);
+            return $this->model->paginate($perPage, $columns, $pageName, $page);
+        }
+        
+        public function all(array $columns = ['*'])
+        {
+            return $this->get($columns);
+        }
+        
+        public function whereLike(string $column, $value)
+        {
+            $value = str_replace(' ', '%', $value);
+            
+            return $this->model->where($column, 'LIKE', '%' . $value . '%');
+        }
+        
+        public function toSql()
+        {
+            return $this->model->toSql();
+        }
+        
+        public function getBindings()
+        {
+            return $this->model->getBindings();
+        }
+        
+        public function search($columns, $value)
+        {
+            if(!is_array($columns))
+            {
+                $columns = [$columns];
+            }
+            
+            foreach($columns as $column)
+            {
+                $this->model->orWhere(function ($query) use ($column, $value)
+                {
+                    $query->where($column, 'LIKE', '%' . $value . '%');
+                });
+            }
+            
+            return $this->model;
+        }
+        
+        public function where($column, $comparator = '=', $value = null)
+        {
+            return $this->model->where($column, $comparator, $value);
+        }
+    
+        public function whereNotIn($column, array $values = [])
+        {
+            return $this->model->whereNotIn($column, $values);
+        }
+    
+        public function whereIn($column, array $values = [])
+        {
+            return $this->model->whereIn($column, $values);
+        }
+        
+        public function addScopeQuery(Closure $scope)
+        {
+            $this->model = $scope($this->model);
+            
+            return $this;
+        }
+    
+        public function model()
+        {
+            return $this->model;
+        }
+    
+        public function take($take)
+        {
+            return $this->model->take($take);
+        }
+        
+        public function __call($method, $parameters)
+        {
+            // Check for scopes
+            if(method_exists($this, $scope = 'scope' . ucfirst($method)))
+            {
+                return call_user_func_array([$this, $scope], $parameters);
+            }
+            
+            $className = get_class($this);
+            
+            throw new BadMethodCallException("Call to undefined method {$className}::{$method}()");
         }
     }
