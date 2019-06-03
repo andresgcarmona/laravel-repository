@@ -55,7 +55,7 @@
          * @param array $columns array of columns to select from the model(s).
          * @return mixed
          */
-        public function get(array $columns = ['*']) : ?object
+        public function get(array $columns = ['*'])
         {
             return $this->model->get($columns);
         }
@@ -140,6 +140,16 @@
         public function take($take)
         {
             return $this->model->take($take);
+        }
+
+        public function skip($skip)
+        {
+            return $this->model->skip($skip);
+        }
+
+        public function count()
+        {
+            return $this->model->count();
         }
         
         public function __call($method, $parameters)
