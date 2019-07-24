@@ -1,14 +1,16 @@
 <?php
-    
+
     namespace Polaris;
-    
+
     use BadMethodCallException;
     use Closure;
     use Exception as RepositoryException;
     use Illuminate\Container\Container as App;
     use Illuminate\Database\Eloquent\Collection;
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Query\Builder;
     use Polaris\Contracts\RepositoryInterface;
-    
+
     abstract class AbstractRepository implements RepositoryInterface
     {
         /**
@@ -17,14 +19,28 @@
          * @var App
          */
         protected $app;
-        
+
         /**
-         * The model's query builder.
+         * The repository's model class.
          *
          * @var
          */
         protected $model;
-        
+
+        /**
+         * Holds an intances of the model class.
+         *
+         * @var Model
+         */
+        protected $modelInstance;
+
+        /**
+         * The query builder reference.
+         *
+         * @var Builder
+         */
+        protected $query;
+
         /**
          * AbstractRepository constructor.
          *
@@ -34,21 +50,85 @@
         public function __construct(App $app)
         {
             $this->app = $app;
-            
+
             $this->makeModel();
         }
-        
+
         /**
-         * @return \Illuminate\Database\Eloquent\Builder
+         * @return Model
          * @throws RepositoryException
          */
-        public function makeModel()
+        public function makeModel(): Model
         {
-            $model = $this->app->make($this->model);
-            
-            return $this->model = $model->newQuery();
+            // Verify that the model property is set.
+            if(empty($this->model))
+            {
+                throw new RepositoryException('The model class must be set on the repository.');
+            }
+
+            // Make a new model instance of model type.
+            $this->modelInstance = $this->app->make($this->model);
+
+            // Create the QueryBuilder instance.
+            $this->query = $this->modelInstance->newQuery();
+
+            // Return the newly created instance.
+            return $this->modelInstance;
         }
-        
+
+        /**
+         * Generate a new instance from the modelInstance class field.
+         *
+         * @param array $attributes
+         * @return Model
+         */
+        public function newInstance(array $attributes = []): Model
+        {
+            return $this->modelInstance->newInstance($attributes);
+        }
+
+        /**
+         * Creates a new query builder object for this repository's model.
+         *
+         * @return AbstractRepository
+         */
+        public function newQuery(): AbstractRepository
+        {
+            $this->query = $this->modelInstance->newQuery();
+
+            return $this;
+        }
+
+        /**
+         * Creates a new model instance and stores It in the database.
+         *
+         * @param array $attributes
+         * @return mixed|null
+         */
+        public function create(array $attributes)
+        {
+            $instance = $this->newInstance($attributes);
+
+            if($instance->save())
+            {
+                return $instance;
+            }
+
+            return null;
+        }
+
+        /**
+         * Find a model by its primary key.
+         *
+         * @param       $id
+         * @param array $columns
+         * @return Model|Collection|\Illuminate\Database\Eloquent\Builder[]|static|null
+         */
+        public function find($id, array $columns = ['*'])
+        {
+            return $this->where($this->modelInstance->getQualifiedKeyName(), '=', $id)->first($columns);
+        }
+
         /**
          * Returns all the records in the current constructed query.
          *
@@ -57,101 +137,109 @@
          */
         public function get(array $columns = ['*'])
         {
-            return $this->model->get($columns);
+            return $this->query->get($columns);
         }
-        
+
         /**
-         * @param int $numResults number of results returned by this method.
-         * @param array $columns array of columns to select from the model(s).
+         * @param int   $numResults number of results returned by this method.
+         * @param array $columns    array of columns to select from the model(s).
          * @return Collection
          */
         public function paginate(int $perPage = 15, array $columns = ['*'], string $pageName = 'page', $page = null)
         {
-            return $this->model->paginate($perPage, $columns, $pageName, $page);
+            return $this->query->paginate($perPage, $columns, $pageName, $page);
         }
-        
+
         public function all(array $columns = ['*'])
         {
             return $this->get($columns);
         }
-        
+
         public function whereLike(string $column, $value)
         {
             $value = str_replace(' ', '%', $value);
-            
-            return $this->model->where($column, 'LIKE', '%' . $value . '%');
+
+            return $this->query->where($column, 'LIKE', '%' . $value . '%');
         }
-        
+
         public function toSql()
         {
-            return $this->model->toSql();
+            return $this->query->toSql();
         }
-        
+
         public function getBindings()
         {
-            return $this->model->getBindings();
+            return $this->query->getBindings();
         }
-        
+
         public function search($columns, $value)
         {
             if(!is_array($columns))
             {
                 $columns = [$columns];
             }
-            
+
             foreach($columns as $column)
             {
-                $this->model->orWhere(function ($query) use ($column, $value)
+                $this->query->orWhere(function($query) use ($column, $value)
                 {
                     $query->where($column, 'LIKE', '%' . $value . '%');
                 });
             }
-            
-            return $this->model;
+
+            return $this->query;
         }
-        
-        public function where($column, $comparator = '=', $value = null)
+
+        /**
+         * Where wrapper for Database Query Builder.
+         *
+         * @param        $column
+         * @param string $operator
+         * @param null   $value
+         * @return Builder
+         */
+        public function where($column, $operator = '=', $value = null)
         {
-            return $this->model->where($column, $comparator, $value);
+            return $this->query->where($column, $operator, $value);
         }
-    
+
         public function whereNotIn($column, array $values = [])
         {
-            return $this->model->whereNotIn($column, $values);
+            return $this->query->whereNotIn($column, $values);
         }
-    
+
         public function whereIn($column, array $values = [])
         {
-            return $this->model->whereIn($column, $values);
+            return $this->query->whereIn($column, $values);
         }
-        
+
         public function addScopeQuery(Closure $scope)
         {
-            $this->model = $scope($this->model);
-            
+            $this->query = $scope($this->query);
+
             return $this;
         }
-    
+
         public function model()
         {
-            return $this->model;
+            return $this->modelIntance;
         }
-    
+
         public function take($take)
         {
-            return $this->model->take($take);
+            return $this->query->take($take);
         }
 
         public function skip($skip)
         {
-            return $this->model->skip($skip);
+            return $this->query->skip($skip);
         }
 
         public function count()
         {
-            return $this->model->count();
+            return $this->query->count();
         }
-        
+
         public function __call($method, $parameters)
         {
             // Check for scopes
@@ -159,9 +247,9 @@
             {
                 return call_user_func_array([$this, $scope], $parameters);
             }
-            
+
             $className = get_class($this);
-            
+
             throw new BadMethodCallException("Call to undefined method {$className}::{$method}()");
         }
     }
