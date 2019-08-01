@@ -250,9 +250,16 @@
 
         public function __call($method, $parameters)
         {
-            // Check for scopes
+            // Check for scopes in repository class. Overrides scopes in model.
             if (method_exists($this, $scope = 'scope'.ucfirst($method))) {
                 return call_user_func_array([$this, $scope], $parameters);
+            }
+
+            // Check for scopes in model class.
+            if (method_exists($this->modelInstance, $scope = 'scope'.ucfirst($method))) {
+                array_unshift($parameters, $this->query);
+
+                return call_user_func_array([$this->modelInstance, $scope], $parameters);
             }
 
             $className = get_class($this);
