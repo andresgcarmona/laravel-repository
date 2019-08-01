@@ -44,7 +44,7 @@
         /**
          * AbstractRepository constructor.
          *
-         * @param App $app
+         * @param  App  $app
          * @throws RepositoryException
          */
         public function __construct(App $app)
@@ -61,8 +61,7 @@
         public function makeModel(): Model
         {
             // Verify that the model property is set.
-            if(empty($this->model))
-            {
+            if (empty($this->model)) {
                 throw new RepositoryException('The model class must be set on the repository.');
             }
 
@@ -74,17 +73,6 @@
 
             // Return the newly created instance.
             return $this->modelInstance;
-        }
-
-        /**
-         * Generate a new instance from the modelInstance class field.
-         *
-         * @param array $attributes
-         * @return Model
-         */
-        public function newInstance(array $attributes = []): Model
-        {
-            return $this->modelInstance->newInstance($attributes);
         }
 
         /**
@@ -102,15 +90,14 @@
         /**
          * Creates a new model instance and stores It in the database.
          *
-         * @param array $attributes
+         * @param  array  $attributes
          * @return mixed|null
          */
         public function create(array $attributes)
         {
             $instance = $this->newInstance($attributes);
 
-            if($instance->save())
-            {
+            if ($instance->save()) {
                 return $instance;
             }
 
@@ -118,10 +105,21 @@
         }
 
         /**
+         * Generate a new instance from the modelInstance class field.
+         *
+         * @param  array  $attributes
+         * @return Model
+         */
+        public function newInstance(array $attributes = []): Model
+        {
+            return $this->modelInstance->newInstance($attributes);
+        }
+
+        /**
          * Find a model by its primary key.
          *
          * @param       $id
-         * @param array $columns
+         * @param  array  $columns
          * @return Model|Collection|\Illuminate\Database\Eloquent\Builder[]|static|null
          */
         public function find($id, array $columns = ['*'])
@@ -130,19 +128,21 @@
         }
 
         /**
-         * Returns all the records in the current constructed query.
+         * Where wrapper for Database Query Builder.
          *
-         * @param array $columns array of columns to select from the model(s).
-         * @return mixed
+         * @param        $column
+         * @param  string  $operator
+         * @param  null  $value
+         * @return Builder
          */
-        public function get(array $columns = ['*'])
+        public function where($column, $operator = '=', $value = null)
         {
-            return $this->query->get($columns);
+            return $this->query->where($column, $operator, $value);
         }
 
         /**
-         * @param int   $numResults number of results returned by this method.
-         * @param array $columns    array of columns to select from the model(s).
+         * @param  int  $numResults  number of results returned by this method.
+         * @param  array  $columns  array of columns to select from the model(s).
          * @return Collection
          */
         public function paginate(int $perPage = 15, array $columns = ['*'], string $pageName = 'page', $page = null)
@@ -155,11 +155,22 @@
             return $this->get($columns);
         }
 
+        /**
+         * Returns all the records in the current constructed query.
+         *
+         * @param  array  $columns  array of columns to select from the model(s).
+         * @return mixed
+         */
+        public function get(array $columns = ['*'])
+        {
+            return $this->query->get($columns);
+        }
+
         public function whereLike(string $column, $value)
         {
             $value = str_replace(' ', '%', $value);
 
-            return $this->query->where($column, 'LIKE', '%' . $value . '%');
+            return $this->query->where($column, 'LIKE', '%'.$value.'%');
         }
 
         public function toSql()
@@ -174,33 +185,18 @@
 
         public function search($columns, $value)
         {
-            if(!is_array($columns))
-            {
+            if (!is_array($columns)) {
                 $columns = [$columns];
             }
 
-            foreach($columns as $column)
-            {
-                $this->query->orWhere(function($query) use ($column, $value)
+            foreach ($columns as $column) {
+                $this->query->orWhere(function ($query) use ($column, $value)
                 {
-                    $query->where($column, 'LIKE', '%' . $value . '%');
+                    $query->where($column, 'LIKE', '%'.$value.'%');
                 });
             }
 
             return $this->query;
-        }
-
-        /**
-         * Where wrapper for Database Query Builder.
-         *
-         * @param        $column
-         * @param string $operator
-         * @param null   $value
-         * @return Builder
-         */
-        public function where($column, $operator = '=', $value = null)
-        {
-            return $this->query->where($column, $operator, $value);
         }
 
         public function whereNotIn($column, array $values = [])
@@ -240,11 +236,22 @@
             return $this->query->count();
         }
 
+        /**
+         * Set order by SQL clause.
+         *
+         * @param        $column
+         * @param  string  $direction
+         * @return mixed
+         */
+        public function orderBy($column, $direction = 'asc')
+        {
+            return $this->query->orderBy($column, $direction);
+        }
+
         public function __call($method, $parameters)
         {
             // Check for scopes
-            if(method_exists($this, $scope = 'scope' . ucfirst($method)))
-            {
+            if (method_exists($this, $scope = 'scope'.ucfirst($method))) {
                 return call_user_func_array([$this, $scope], $parameters);
             }
 

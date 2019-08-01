@@ -1,5 +1,5 @@
 <?php
-    
+
     namespace Polaris\Contracts;
 
     /**
@@ -12,16 +12,16 @@
         /**
          * Returns all the records in the current constructed query.
          *
-         * @param array $columns array of columns to select from the model(s).
+         * @param  array  $columns  array of columns to select from the model(s).
          * @return mixed
          */
         public function get(array $columns = ['*']);
-    
+
         /**
          * Returns a paginated collection of models for the curren constructed query.
          *
-         * @param int $numResults number of results returned by this method.
-         * @param array $columns array of columns to select from the model(s).
+         * @param  int  $numResults  number of results returned by this method.
+         * @param  array  $columns  array of columns to select from the model(s).
          * @return mixed
          */
         public function paginate(int $numResults = 15, array $columns = ['*']);

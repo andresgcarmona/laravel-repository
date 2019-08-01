@@ -1,9 +1,9 @@
 <?php
-    
+
     namespace Polaris;
-    
+
     use Illuminate\Support\ServiceProvider;
-    
+
     class RepositoryServiceProvider extends ServiceProvider
     {
         /**
@@ -15,7 +15,7 @@
         {
             //
         }
-        
+
         /**
          * Register services.
          *
