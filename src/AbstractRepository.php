@@ -248,13 +248,6 @@
             return $this->query->orderBy($column, $direction);
         }
 
-        /**
-         * Dynamically handle calls into the repository instance.
-         *
-         * @param $method
-         * @param $parameters
-         * @return mixed
-         */
         public function __call($method, $parameters)
         {
             // Check for scopes in repository class. Overrides scopes in model.
@@ -271,7 +264,6 @@
 
             $className = get_class($this);
 
-            // Throw exception if no method exists with that name.
             throw new BadMethodCallException("Call to undefined method {$className}::{$method}()");
         }
     }
