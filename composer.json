@@ -9,7 +9,9 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {},
+  "require": {
+    "ext-json": "*"
+  },
     "autoload": {
         "psr-4": {
             "Polaris\\": "src/"
