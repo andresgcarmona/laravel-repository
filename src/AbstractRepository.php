@@ -248,6 +248,11 @@
             return $this->query->orderBy($column, $direction);
         }
 
+        public function clone()
+        {
+            return clone $this->query;
+        }
+
         public function __call($method, $parameters)
         {
             // Check for scopes in repository class. Overrides scopes in model.

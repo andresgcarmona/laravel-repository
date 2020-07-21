@@ -1,25 +1,25 @@
 {
-    "name": "polaris/laravel-repository",
-    "description": "A repository package to manage models operations in Laravel",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Andres G. Carmona",
-            "email": "ing.andres.carmona@gmail.com"
-        }
-    ],
-    "minimum-stability": "dev",
-  "require": {},
-    "autoload": {
-        "psr-4": {
-            "Polaris\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Polaris\\RepositoryServiceProvider"
-            ]
-        }
+  "name": "polaris/laravel-repository",
+  "description": "A repository package to manage models operations in Laravel",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Andres G. Carmona",
+      "email": "ing.andres.carmona@gmail.com"
     }
+  ],
+  "minimum-stability": "dev",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "Polaris\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Polaris\\RepositoryServiceProvider"
+      ]
+    }
+  }
 }
